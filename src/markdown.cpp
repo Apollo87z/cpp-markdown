@@ -657,7 +657,7 @@ bool Document::read(std::istream& in) {
 	if (mProcessed) return false;
 
 	token::Container *tokens=dynamic_cast<token::Container*>(mTokenContainer.get());
-	assert(tokens!=0);
+	assert(tokens!=nullptr);
 
 	std::string line;
 	TokenGroup tgt;
@@ -701,7 +701,7 @@ void Document::_mergeMultilineHtmlTags() {
 	TokenGroup processed;
 
 	token::Container *tokens=dynamic_cast<token::Container*>(mTokenContainer.get());
-	assert(tokens!=0);
+	assert(tokens!=nullptr);
 
 	for (TokenGroup::const_iterator i=tokens->subTokens().begin(),
 		ie=tokens->subTokens().end(); i!=ie; ++i)
@@ -726,7 +726,7 @@ void Document::_processInlineHtmlAndReferences() {
 	TokenGroup processed;
 
 	token::Container *tokens=dynamic_cast<token::Container*>(mTokenContainer.get());
-	assert(tokens!=0);
+	assert(tokens!=nullptr);
 
 	for (TokenGroup::const_iterator ii=tokens->subTokens().begin(),
 		iie=tokens->subTokens().end(); ii!=iie; ++ii)
@@ -759,8 +759,8 @@ void Document::_processInlineHtmlAndReferences() {
 void Document::_processBlocksItems(TokenPtr inTokenContainer) {
 	if (!inTokenContainer->isContainer()) return;
 
-	token::Container *tokens=dynamic_cast<token::Container*>(inTokenContainer.get());
-	assert(tokens!=0);
+	auto *tokens=dynamic_cast<token::Container*>(inTokenContainer.get());
+	assert(tokens!=nullptr);
 
 	TokenGroup processed;
 
@@ -790,8 +790,8 @@ void Document::_processBlocksItems(TokenPtr inTokenContainer) {
 }
 
 void Document::_processParagraphLines(TokenPtr inTokenContainer) {
-	token::Container *tokens=dynamic_cast<token::Container*>(inTokenContainer.get());
-	assert(tokens!=0);
+	auto *tokens=dynamic_cast<token::Container*>(inTokenContainer.get());
+	assert(tokens!=nullptr);
 
 	bool noPara=tokens->inhibitParagraphs();
 	for (TokenGroup::const_iterator ii=tokens->subTokens().begin(),

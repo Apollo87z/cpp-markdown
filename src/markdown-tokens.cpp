@@ -16,8 +16,7 @@
 using std::cerr;
 using std::endl;
 
-namespace markdown {
-namespace token {
+namespace markdown::token {
 
 namespace {
 
@@ -62,8 +61,8 @@ std::string encodeString(const std::string& src, int encodingFlags) {
 
 bool looksLikeUrl(const std::string& str) {
 	const char *schemes[]={ "http://", "https://", "ftp://", "ftps://",
-		"file://", "www.", "ftp.", 0 };
-	for (size_t x=0; schemes[x]!=0; ++x) {
+		"file://", "www.", "ftp.", nullptr };
+	for (size_t x=0; schemes[x]!=nullptr; ++x) {
 		const char *s=str.c_str(), *t=schemes[x];
 		while (*s!=0 && *t!=0 && *s==*t) { ++s; ++t; }
 		if (*t==0) return true;
@@ -105,8 +104,8 @@ std::string emailEncode(const std::string& src) {
 }
 
 bool looksLikeEmailAddress(const std::string& str) {
-	typedef std::string::const_iterator Iter;
-	typedef std::string::const_reverse_iterator RIter;
+	using Iter = std::string::const_iterator;
+	using RIter = std::string::const_reverse_iterator;
 	Iter i=std::find_if(str.begin(), str.end(), notValidNameCharacter);
 	if (i!=str.end() && *i=='@' && i!=str.begin()) {
 		// The name part is valid.
@@ -140,7 +139,7 @@ const char *cOtherTagInit[]={
 	"isindex", "a/", "img", "br", "map/", "area", "object/", "param",
 	"applet/", "span/",
 
-	0 };
+	nullptr };
 
 const char *cBlockTagInit[]={ "p/", "blockquote/", "hr", "h1/", "h2/",
 	"h3/", "h4/", "h5/", "h6/", "dl/", "dt/", "dd/", "ol/", "ul/",
@@ -149,7 +148,7 @@ const char *cBlockTagInit[]={ "p/", "blockquote/", "hr", "h1/", "h2/",
 	"select/", "option", "input", "label/", "textarea/", "div/", "pre/",
 	"address/", "iframe/", "frame/", "frameset/", "noframes/",
 	"center/", "b/", "i/", "big/", "small/", /*"s/",*/ "strike/", "tt/",
-	"u/", "font/", "ins/", "del/", 0 };
+	"u/", "font/", "ins/", "del/", nullptr };
 
 // Other official ones (not presently in use in this code)
 //"!doctype", "bdo", "body", "button", "fieldset", "head", "html",
@@ -158,7 +157,7 @@ const char *cBlockTagInit[]={ "p/", "blockquote/", "hr", "h1/", "h2/",
 boost::unordered_set<std::string> otherTags, blockTags;
 
 void initTag(boost::unordered_set<std::string> &set, const char *init[]) {
-	for (size_t x=0; init[x]!=0; ++x) {
+	for (size_t x=0; init[x]!=nullptr; ++x) {
 		std::string str=init[x];
 		if (*str.rbegin()=='/') {
 			// Means it can have a closing tag
@@ -229,7 +228,7 @@ std::string RawText::_processHtmlTagAttributes(std::string src, ReplacementTable
 	// Because "Attribute Content Is Not A Code Span"
 	std::string tgt;
 	std::string::const_iterator prev=src.begin(), end=src.end();
-	while (1) {
+	while (true) {
 		static const boost::regex cHtmlToken("<((/?)([a-zA-Z0-9]+)(?:( +[a-zA-Z0-9]+?(?: ?= ?(\"|').*?\\5))+? */? *))>");
 		boost::smatch m;
 		if (boost::regex_search(prev, end, m, cHtmlToken)) {
@@ -241,7 +240,7 @@ std::string RawText::_processHtmlTagAttributes(std::string src, ReplacementTable
 
 				std::string fulltag=m[0], tgttag;
 				std::string::const_iterator prevtag=fulltag.begin(), endtag=fulltag.end();
-				while (1) {
+				while (true) {
 					static const boost::regex cAttributeStrings("= ?(\"|').*?\\1");
 					boost::smatch mtag;
 					if (boost::regex_search(prevtag, endtag, mtag, cAttributeStrings)) {
@@ -280,7 +279,7 @@ std::string RawText::_processCodeSpans(std::string src, ReplacementTable&
 	for (int pass=0; pass<2; ++pass) {
 		std::string tgt;
 		std::string::const_iterator prev=src.begin(), end=src.end();
-		while (1) {
+		while (true) {
 			boost::smatch m;
 			if (boost::regex_search(prev, end, m, cCodeSpan[pass])) {
 				tgt+=std::string(prev, m[0].first);
@@ -301,7 +300,7 @@ std::string RawText::_processCodeSpans(std::string src, ReplacementTable&
 std::string RawText::_processEscapedCharacters(const std::string& src) {
 	std::string tgt;
 	std::string::const_iterator prev=src.begin(), end=src.end();
-	while (1) {
+	while (true) {
 		std::string::const_iterator i=std::find(prev, end, '\\');
 		if (i!=end) {
 			tgt+=std::string(prev, i);
@@ -330,7 +329,7 @@ std::string RawText::_processSpaceBracketedGroupings(const std::string &src,
 
 	std::string tgt;
 	std::string::const_iterator prev=src.begin(), end=src.end();
-	while (1) {
+	while (true) {
 		boost::smatch m;
 		if (boost::regex_search(prev, end, m, cRemove)) {
 			tgt+=std::string(prev, m[0].first);
@@ -375,7 +374,7 @@ std::string RawText::_processLinksImagesAndTags(const std::string &src,
 
 	std::string tgt;
 	std::string::const_iterator prev=src.begin(), end=src.end();
-	while (1) {
+	while (true) {
 		boost::smatch m;
 		if (boost::regex_search(prev, end, m, cExpression)) {
 			assert(m[0].matched);
@@ -475,7 +474,7 @@ TokenGroup RawText::_processBoldAndItalicSpans(const std::string& src,
 	TokenGroup tgt;
 	std::string::const_iterator i=src.begin(), end=src.end(), prev=i;
 
-	while (1) {
+	while (true) {
 		boost::smatch m;
 		if (boost::regex_search(prev, end, m, cEmphasisExpression)) {
 			if (prev!=m[0].first) tgt.push_back(TokenPtr(new
@@ -597,7 +596,7 @@ TokenGroup RawText::_encodeProcessedItems(const std::string &src,
 
 	TokenGroup r;
 	std::string::const_iterator prev=src.begin();
-	while (1) {
+	while (true) {
 		boost::smatch m;
 		if (boost::regex_search(prev, src.end(), m, cReplaced)) {
 			std::string pre=std::string(prev, m[0].first);
@@ -630,7 +629,7 @@ std::string RawText::_restoreProcessedItems(const std::string &src,
 
 	std::ostringstream r;
 	std::string::const_iterator prev=src.begin();
-	while (1) {
+	while (true) {
 		boost::smatch m;
 		if (boost::regex_search(prev, src.end(), m, cReplaced)) {
 			std::string pre=std::string(prev, m[0].first);
@@ -710,8 +709,8 @@ optional<TokenGroup> Container::processSpanElements(const LinkIds& idTable) {
 		} else {
 			optional<TokenGroup> subt=(*ii)->processSpanElements(idTable);
 			if (subt) {
-				const Container *c=dynamic_cast<const Container*>((*ii).get());
-				assert(c!=0);
+				auto *c=dynamic_cast<const Container*>((*ii).get());
+				assert(c!=nullptr);
 				t.push_back(c->clone(*subt));
 			} else t.push_back(*ii);
 		}
@@ -724,8 +723,8 @@ UnorderedList::UnorderedList(const TokenGroup& contents, bool paragraphMode) {
 	if (paragraphMode) {
 		// Change each of the text items into paragraphs
 		for (CTokenGroupIter i=contents.begin(), ie=contents.end(); i!=ie; ++i) {
-			token::ListItem *item=dynamic_cast<token::ListItem*>((*i).get());
-			assert(item!=0);
+			auto *item=dynamic_cast<token::ListItem*>((*i).get());
+			assert(item!=nullptr);
 			item->inhibitParagraphs(false);
 			mSubTokens.push_back(*i);
 		}
@@ -736,7 +735,7 @@ UnorderedList::UnorderedList(const TokenGroup& contents, bool paragraphMode) {
 
 void BoldOrItalicMarker::writeAsHtml(std::ostream& out) const {
 	if (!mDisabled) {
-		if (mMatch!=0) {
+		if (mMatch!=nullptr) {
 			assert(mSize>=1 && mSize<=3);
 			if (mOpenMarker) {
 				out << (mSize==1 ? "<em>" : mSize==2 ? "<strong>" : "<strong><em>");
@@ -749,7 +748,7 @@ void BoldOrItalicMarker::writeAsHtml(std::ostream& out) const {
 
 void BoldOrItalicMarker::writeToken(std::ostream& out) const {
 	if (!mDisabled) {
-		if (mMatch!=0) {
+		if (mMatch!=nullptr){
 			std::string type=(mSize==1 ? "italic" : mSize==2 ? "bold" : "italic&bold");
 			if (mOpenMarker) {
 				out << "Matched open-" << type << " marker" << endl;
@@ -771,5 +770,4 @@ void Image::writeAsHtml(std::ostream& out) const {
 	out << "/>";
 }
 
-} // namespace token
-} // namespace markdown
+} 
