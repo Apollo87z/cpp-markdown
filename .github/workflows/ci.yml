@@ -77,3 +77,52 @@ jobs:
 
       - name: Deploy to AKS
         run: kubectl rollout restart deployment/conversion-service
+
+  deploy-infra:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Set AKS context
+        uses: azure/aks-set-context@v4
+        with:
+          resource-group: cpp-markdown-rg
+          cluster-name: cpp-markdown-cluster
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Apply Kafka manifests
+        run: kubectl apply -f k8s/kafka/
+
+      - name: Apply Postgres manifests
+        run: |
+          kubectl apply -f k8s/postgres/postgres.yaml -n tenant-shared
+          kubectl apply -f k8s/postgres/postgres.yaml -n tenant-acme
+
+      - name: Deploy shared tenant
+        run: |
+          helm upgrade --install shared-tenant k8s/helm/conversion-service \
+            --namespace tenant-shared \
+            --set tenant=shared \
+            --set replicaCount=2 \
+            --set service.type=ClusterIP \
+            --set kafka.inputTopic=documents-to-convert-shared \
+            --set kafka.outputTopic=converted-documents-shared
+
+      - name: Deploy acme tenant
+        run: |
+          helm upgrade --install acme-tenant k8s/helm/conversion-service \
+            --namespace tenant-acme \
+            --set tenant=acme \
+            --set replicaCount=1 \
+            --set service.type=ClusterIP \
+            --set kafka.inputTopic=documents-to-convert-acme \
+            --set kafka.outputTopic=converted-documents-acme
