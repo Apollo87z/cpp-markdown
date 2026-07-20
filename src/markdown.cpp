@@ -487,7 +487,7 @@ optional<TokenPtr> parseListBlock(CTokenGroupIter& i, CTokenGroupIter end, bool 
 
 bool parseReference(CTokenGroupIter& i, CTokenGroupIter end, markdown::LinkIds &idTable) {
 	if ((*i)->text()) {
-		static const std::regex cReference("^ {0,3}\\[(.+)\\]: +<?([^ >]+)>?(?: *(?:('|\")(.*)\\3)|(?:\\((.*)\\)))?$");
+		static const std::regex cReference(R"(^ {0,3}\[(.+)\]: +<?([^ >]+)>?(?: *(?:('|")(.*)\3)|(?:\((.*)\)))?$)");
 		// Useful captures: 1=id, 2=url, 4/5=title
 
 		const std::string& line1(*(*i)->text());
@@ -501,7 +501,7 @@ bool parseReference(CTokenGroupIter& i, CTokenGroupIter end, markdown::LinkIds &
 				++ii;
 				if (ii!=end && (*ii)->text()) {
 					// It could be on the next line
-					static const std::regex cSeparateTitle("^ *(?:(?:('|\")(.*)\\1)|(?:\\((.*)\\))) *$");
+					static const std::regex cSeparateTitle(R"(^ *(?:(?:('|")(.*)\1)|(?:\((.*)\))) *$)");
 					// Useful Captures: 2/3=title
 
 					const std::string& line2(*(*ii)->text());
@@ -554,7 +554,7 @@ optional<TokenPtr> parseHeader(CTokenGroupIter& i, CTokenGroupIter end) {
 			const std::string& line=*(*ii)->text();
 			if (std::regex_match(line, m, cUnderlinedHeaders)) {
 				char typeChar=std::string(m[1])[0];
-				TokenPtr p=TokenPtr(new markdown::token::Header((typeChar=='='
+				auto p=TokenPtr(new markdown::token::Header((typeChar=='='
 					? 1 : 2), *(*i)->text()));
 				i=ii;
 				return p;

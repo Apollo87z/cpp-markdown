@@ -278,12 +278,12 @@ std::string RawText::_processCodeSpans(std::string src, ReplacementTable&
     boost::regex("(?:^|(?<=[^\\\\]))`` (.+?) ``"),
     boost::regex("(?:^|(?<=[^\\\\]))`(.+?)`")
 };
-	for (int pass=0; pass<2; ++pass) {
-		std::string tgt;
-		std::string::const_iterator prev=src.begin(), end=src.end();
-		while (true) {
-			boost::smatch m;
-			if (boost::regex_search(prev, end, m, cCodeSpan[pass])) {
+	for (const auto &pattern : cCodeSpan) {
+    std::string tgt;
+    std::string::const_iterator prev=src.begin(), end=src.end();
+    while (true) {
+        boost::smatch m;
+        if (boost::regex_search(prev, end, m, pattern)) {
 				tgt+=std::string(prev, m[0].first);
 				tgt+="\x01@"+std::to_string(replacements.size())+"@codeSpan\x01";
 				prev=m[0].second;
@@ -403,7 +403,7 @@ std::string RawText::_processLinksImagesAndTags(const std::string &src,
 					optional<markdown::LinkIds::Target> target=idTable.find(linkId);
 					if (target) { url=target->url; title=target->title; resolved=true; };
 				} else {
-					static const std::regex cReference("^<?([^ >]*)>?(?: *(?:('|\")(.*)\\2)|(?:\\((.*)\\)))? *$");
+					static const std::regex cReference(R"(^<?([^ >]*)>?(?: *(?:('|")(.*)\2)|(?:\((.*)\)))? *$)");
 					// Useful captures: 1=url, 3/4=title
 					contentsOrAlttext=m[2];
 					std::string urlAndTitle=m[3];
