@@ -6,10 +6,9 @@
 */
 
 #include "markdown-tokens.h"
-
+#include <sstream>
 #include <stack>
 
-#include <boost/lexical_cast.hpp>
 #include <boost/regex.hpp>
 #include <unordered_set>
 
@@ -245,7 +244,7 @@ std::string RawText::_processHtmlTagAttributes(std::string src, ReplacementTable
 					boost::smatch mtag;
 					if (boost::regex_search(prevtag, endtag, mtag, cAttributeStrings)) {
 						tgttag+=std::string(prevtag, mtag[0].first);
-						tgttag+="\x01@"+boost::lexical_cast<std::string>(replacements.size())+"@htmlTagAttr\x01";
+						tgttag+="\x01@"+std::to_string(replacements.size())+"@htmlTagAttr\x01";
 						prevtag=mtag[0].second;
 
 						replacements.push_back(TokenPtr(new TextHolder(std::string(mtag[0]), false, cAmps|cAngles)));
@@ -283,7 +282,7 @@ std::string RawText::_processCodeSpans(std::string src, ReplacementTable&
 			boost::smatch m;
 			if (boost::regex_search(prev, end, m, cCodeSpan[pass])) {
 				tgt+=std::string(prev, m[0].first);
-				tgt+="\x01@"+boost::lexical_cast<std::string>(replacements.size())+"@codeSpan\x01";
+				tgt+="\x01@"+std::to_string(replacements.size())+"@codeSpan\x01";
 				prev=m[0].second;
 				replacements.push_back(TokenPtr(new CodeSpan(_restoreProcessedItems(m[1], replacements))));
 			} else {
@@ -307,7 +306,7 @@ std::string RawText::_processEscapedCharacters(const std::string& src) {
 			++i;
 			if (i!=end) {
 				optional<size_t> e=isEscapedCharacter(*i);
-				if (e) tgt+="\x01@#"+boost::lexical_cast<std::string>(*e)+"@escaped\x01";
+				if (e) tgt+="\x01@#"+std::to_string(*e)+"@escaped\x01";
 				else tgt=tgt+'\\'+*i;
 				prev=i+1;
 			} else {
@@ -333,7 +332,7 @@ std::string RawText::_processSpaceBracketedGroupings(const std::string &src,
 		boost::smatch m;
 		if (boost::regex_search(prev, end, m, cRemove)) {
 			tgt+=std::string(prev, m[0].first);
-			tgt+="\x01@"+boost::lexical_cast<std::string>(replacements.size())+"@spaceBracketed\x01";
+			tgt+="\x01@"+std::to_string(replacements.size())+"@links&Images1\x01";
 			replacements.push_back(TokenPtr(new RawText(m[0])));
 			prev=m[0].second;
 		} else {
@@ -381,7 +380,7 @@ std::string RawText::_processLinksImagesAndTags(const std::string &src,
 			assert(m[0].length()!=0);
 
 			tgt+=std::string(prev, m[0].first);
-			tgt+="\x01@"+boost::lexical_cast<std::string>(replacements.size())+"@links&Images1\x01";
+			tgt+="\x01@"+std::to_string(replacements.size())+"@links&Images1\x01";
 			prev=m[0].second;
 
 			bool isImage=false, isLink=false, isReference=false;
@@ -425,7 +424,7 @@ std::string RawText::_processLinksImagesAndTags(const std::string &src,
 				} else {
 					replacements.push_back(TokenPtr(new HtmlAnchorTag(url, title)));
 					tgt+=contentsOrAlttext;
-					tgt+="\x01@"+boost::lexical_cast<std::string>(replacements.size())+"@links&Images2\x01";
+					tgt+="\x01@"+std::to_string(replacements.size())+"@links&Images2\x01";
 					replacements.push_back(TokenPtr(new HtmlTag("/a")));
 				}
 			} else {
@@ -605,10 +604,10 @@ TokenGroup RawText::_encodeProcessedItems(const std::string &src,
 
 			std::string ref=m[1];
 			if (ref[0]=='#') {
-				size_t n=boost::lexical_cast<size_t>(ref.substr(1));
+				size_t n=std::stoul(ref.substr(1));
 				r.push_back(TokenPtr(new EscapedCharacter(escapedCharacter(n))));
 			} else if (!ref.empty()) {
-				size_t n=boost::lexical_cast<size_t>(ref);
+				size_t n=std::stoul(ref);
 
 				assert(n<replacements.size());
 				r.push_back(replacements[n]);
@@ -638,10 +637,10 @@ std::string RawText::_restoreProcessedItems(const std::string &src,
 
 			std::string ref=m[1];
 			if (ref[0]=='#') {
-				size_t n=boost::lexical_cast<size_t>(ref.substr(1));
+				size_t n=std::stoul(ref.substr(1));
 				r << '\\' << escapedCharacter(n);
 			} else if (!ref.empty()) {
-				size_t n=boost::lexical_cast<size_t>(ref);
+				size_t n=std::stoul(ref);
 
 				assert(n<replacements.size());
 				replacements[n]->writeAsOriginal(r);

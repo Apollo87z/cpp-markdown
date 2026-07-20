@@ -12,7 +12,6 @@
 #include <cassert>
 
 #include <boost/regex.hpp>
-#include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
 
 using std::cerr;
@@ -246,7 +245,7 @@ optional<TokenPtr> parseBlockQuote(CTokenGroupIter& i, CTokenGroupIter end) {
 		boost::smatch m;
 		if (boost::regex_match(line, m, cBlockQuoteExpression)) {
 			size_t quoteLevel=countQuoteLevel(m[1]);
-			boost::regex continuationExpression=boost::regex("^((?: {0,3}>){"+boost::lexical_cast<std::string>(quoteLevel)+"}) ?(.*)$");
+			boost::regex continuationExpression=boost::regex("^((?: {0,3}>){"+std::to_string(quoteLevel)+"}) ?(.*)$");
 
 			markdown::TokenGroup subTokens;
 			subTokens.push_back(TokenPtr(new markdown::token::RawText(m[2])));
@@ -354,9 +353,9 @@ optional<TokenPtr> parseListBlock(CTokenGroupIter& i, CTokenGroupIter end, bool 
 			static const boost::regex cContinuedItemExpression("^ *([^ ].*)$");
 
 			boost::regex continuedAfterBlankLineExpression("^ {"+
-				boost::lexical_cast<std::string>(indent+4)+"}([^ ].*)$");
+				std::to_string(indent+4)+"}([^ ].*)$");;
 			boost::regex codeBlockAfterBlankLineExpression("^ {"+
-				boost::lexical_cast<std::string>(indent+8)+"}(.*)$");
+				std::to_string(indent+8)+"}(.*)$");
 
 			enum NextItemType { cUnknown, cEndOfList, cAnotherItem };
 			NextItemType nextItem=cUnknown;
