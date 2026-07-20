@@ -79,6 +79,7 @@ jobs:
         run: kubectl rollout restart deployment/conversion-service
 
   deploy-infra:
+    needs: build-and-push-image
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/master'
     steps:

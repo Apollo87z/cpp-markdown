@@ -30,5 +30,7 @@ spec:
               value: {{ .Values.kafka.inputTopic | quote }}
             - name: KAFKA_OUTPUT_TOPIC
               value: {{ .Values.kafka.outputTopic | quote }}
+            - name: DB_HOST
+              value: {{ .Values.db.host | quote }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}

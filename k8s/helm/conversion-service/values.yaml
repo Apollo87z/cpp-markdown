@@ -8,6 +8,8 @@ kafka:
   brokers: "my-kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092"
   inputTopic: "documents-to-convert-shared"
   outputTopic: "converted-documents-shared"
+db:
+  host: "postgres"
 resources:
   requests:
     cpu: "100m"
