@@ -6,7 +6,7 @@ RUN apt-get update && apt-get install -y \
     cmake \
     libboost-all-dev \
     librdkafka-dev \
-    libpqxx-dev \
+    libpq-dev \
     git \
     && rm -rf /var/lib/apt/lists/*
 
@@ -23,7 +23,7 @@ RUN apt-get update && apt-get install -y \
     libboost-regex-dev \
     librdkafka1 \
     librdkafka++1 \
-    libpqxx-dev \
+    libpq5 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

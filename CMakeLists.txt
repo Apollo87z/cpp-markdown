@@ -26,6 +26,15 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
+FetchContent_Declare(
+    libpqxx
+    GIT_REPOSITORY https://github.com/jtv/libpqxx.git
+    GIT_TAG 7.9.2
+)
+set(PQXX_LIBRARIES "" CACHE STRING "" FORCE)
+set(SKIP_BUILD_TEST ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(libpqxx)
+
 add_executable(markdown_tests test/markdown_tests.cpp)
 target_link_libraries(markdown_tests PUBLIC cppmarkdown GTest::gtest_main)
 target_include_directories(markdown_tests PUBLIC src)
@@ -35,12 +44,10 @@ gtest_discover_tests(markdown_tests)
 
 find_package(Threads REQUIRED)
 find_library(RDKAFKA_LIB rdkafka++)
-find_library(PQXX_LIB pqxx)
-find_library(PQ_LIB pq)
 
 add_executable(conversion-service service/src/main.cpp service/src/message_handler.cpp)
 target_include_directories(conversion-service PRIVATE service/include)
-target_link_libraries(conversion-service PUBLIC cppmarkdown Threads::Threads ${RDKAFKA_LIB} ${PQXX_LIB} ${PQ_LIB})
+target_link_libraries(conversion-service PUBLIC cppmarkdown Threads::Threads ${RDKAFKA_LIB} pqxx)
 
 add_executable(message_handler_tests test/message_handler_tests.cpp service/src/message_handler.cpp)
 target_include_directories(message_handler_tests PUBLIC service/src)
