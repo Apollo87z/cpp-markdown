@@ -11,7 +11,7 @@
 
 #include <boost/lexical_cast.hpp>
 #include <boost/regex.hpp>
-#include <boost/unordered_set.hpp>
+#include <unordered_set>
 
 using std::cerr;
 using std::endl;
@@ -154,9 +154,9 @@ const char *cBlockTagInit[]={ "p/", "blockquote/", "hr", "h1/", "h2/",
 //"!doctype", "bdo", "body", "button", "fieldset", "head", "html",
 //"legend", "noscript", "optgroup", "xmp",
 
-boost::unordered_set<std::string> otherTags, blockTags;
+std::unordered_set<std::string> otherTags, blockTags;
 
-void initTag(boost::unordered_set<std::string> &set, const char *init[]) {
+void initTag(std::unordered_set<std::string> &set, const char *init[]) {
 	for (size_t x=0; init[x]!=nullptr; ++x) {
 		std::string str=init[x];
 		if (*str.rbegin()=='/') {

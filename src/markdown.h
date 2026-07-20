@@ -13,7 +13,7 @@
 #include <memory>
 
 #include <boost/optional.hpp>
-#include <boost/unordered_map.hpp>
+#include <unordered_map>
 
 namespace markdown {
 

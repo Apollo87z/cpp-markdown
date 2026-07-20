@@ -32,7 +32,7 @@ class LinkIds {
 		std::string& title);
 
 	private:
-	typedef boost::unordered_map<std::string, Target> Table;
+	typedef std::unordered_map<std::string, Target> Table;
 
 	static std::string _scrubKey(std::string str);
 
