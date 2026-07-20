@@ -15,7 +15,6 @@ target_link_libraries(cppmarkdown PUBLIC boost_regex)
 add_executable(cpp-markdown src/main.cpp)
 target_link_libraries(cpp-markdown PUBLIC cppmarkdown)
 
-
 enable_testing()
 
 include(FetchContent)
@@ -35,7 +34,13 @@ include(GoogleTest)
 gtest_discover_tests(markdown_tests)
 
 find_package(Threads REQUIRED)
+find_library(RDKAFKA_LIB rdkafka++)
 
-add_executable(conversion-service service/src/main.cpp)
+add_executable(conversion-service service/src/main.cpp service/src/message_handler.cpp)
 target_include_directories(conversion-service PRIVATE service/include)
-target_link_libraries(conversion-service PUBLIC cppmarkdown Threads::Threads)
+target_link_libraries(conversion-service PUBLIC cppmarkdown Threads::Threads ${RDKAFKA_LIB})
+
+add_executable(message_handler_tests test/message_handler_tests.cpp service/src/message_handler.cpp)
+target_include_directories(message_handler_tests PUBLIC service/src)
+target_link_libraries(message_handler_tests PUBLIC GTest::gtest_main)
+gtest_discover_tests(message_handler_tests)
