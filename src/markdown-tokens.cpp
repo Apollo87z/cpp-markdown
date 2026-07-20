@@ -6,9 +6,12 @@
 */
 
 #include "markdown-tokens.h"
+
+#include <cassert>
 #include <sstream>
 #include <stack>
 
+#include <regex>
 #include <boost/regex.hpp>
 #include <unordered_set>
 
@@ -42,8 +45,8 @@ std::string encodeString(const std::string& src, int encodingFlags) {
 	std::string tgt;
 	for (std::string::const_iterator i=src.begin(), ie=src.end(); i!=ie; ++i) {
 		if (*i=='&' && amps) {
-			static const boost::regex cIgnore("^(&amp;)|(&#[0-9]{1,3};)|(&#[xX][0-9a-fA-F]{1,2};)");
-			if (boost::regex_search(i, ie, cIgnore)) {
+			static const std::regex cIgnore("^(&amp;)|(&#[0-9]{1,3};)|(&#[xX][0-9a-fA-F]{1,2};)");
+			if (std::regex_search(i, ie, cIgnore)) {
 				tgt.push_back(*i);
 			} else {
 				tgt+="&amp;";
@@ -228,9 +231,9 @@ std::string RawText::_processHtmlTagAttributes(std::string src, ReplacementTable
 	std::string tgt;
 	std::string::const_iterator prev=src.begin(), end=src.end();
 	while (true) {
-		static const boost::regex cHtmlToken("<((/?)([a-zA-Z0-9]+)(?:( +[a-zA-Z0-9]+?(?: ?= ?(\"|').*?\\5))+? */? *))>");
-		boost::smatch m;
-		if (boost::regex_search(prev, end, m, cHtmlToken)) {
+		static const std::regex cHtmlToken("<((/?)([a-zA-Z0-9]+)(?:( +[a-zA-Z0-9]+?(?: ?= ?(\"|').*?\\5))+? */? *))>");
+		std::smatch m;
+		if (std::regex_search(prev, end, m, cHtmlToken)) {
 			// NOTE: Kludge alert! The `isValidTag` test is a cheat, only here
 			// to handle some edge cases between the Markdown test suite and the
 			// PHP-Markdown one, which seem to conflict.
@@ -240,9 +243,9 @@ std::string RawText::_processHtmlTagAttributes(std::string src, ReplacementTable
 				std::string fulltag=m[0], tgttag;
 				std::string::const_iterator prevtag=fulltag.begin(), endtag=fulltag.end();
 				while (true) {
-					static const boost::regex cAttributeStrings("= ?(\"|').*?\\1");
-					boost::smatch mtag;
-					if (boost::regex_search(prevtag, endtag, mtag, cAttributeStrings)) {
+					static const std::regex cAttributeStrings("= ?(\"|').*?\\1");
+					std::smatch mtag;
+					if (std::regex_search(prevtag, endtag, mtag, cAttributeStrings)) {
 						tgttag+=std::string(prevtag, mtag[0].first);
 						tgttag+="\x01@"+std::to_string(replacements.size())+"@htmlTagAttr\x01";
 						prevtag=mtag[0].second;
@@ -272,9 +275,9 @@ std::string RawText::_processCodeSpans(std::string src, ReplacementTable&
 	replacements)
 {
 	static const boost::regex cCodeSpan[2]={
-		boost::regex("(?:^|(?<=[^\\\\]))`` (.+?) ``"),
-		boost::regex("(?:^|(?<=[^\\\\]))`(.+?)`")
-	};
+    boost::regex("(?:^|(?<=[^\\\\]))`` (.+?) ``"),
+    boost::regex("(?:^|(?<=[^\\\\]))`(.+?)`")
+};
 	for (int pass=0; pass<2; ++pass) {
 		std::string tgt;
 		std::string::const_iterator prev=src.begin(), end=src.end();
@@ -324,13 +327,13 @@ std::string RawText::_processEscapedCharacters(const std::string& src) {
 std::string RawText::_processSpaceBracketedGroupings(const std::string &src,
 	ReplacementTable& replacements)
 {
-	static const boost::regex cRemove("(?:(?: \\*+ )|(?: _+ ))");
+	static const std::regex cRemove("(?:(?: \\*+ )|(?: _+ ))");
 
 	std::string tgt;
 	std::string::const_iterator prev=src.begin(), end=src.end();
 	while (true) {
-		boost::smatch m;
-		if (boost::regex_search(prev, end, m, cRemove)) {
+		std::smatch m;
+		if (std::regex_search(prev, end, m, cRemove)) {
 			tgt+=std::string(prev, m[0].first);
 			tgt+="\x01@"+std::to_string(replacements.size())+"@links&Images1\x01";
 			replacements.push_back(TokenPtr(new RawText(m[0])));
@@ -362,7 +365,7 @@ std::string RawText::_processLinksImagesAndTags(const std::string &src,
 	//
 	//   "|(?:(!?)\\[(.+?)\\](?: *\\[(.*?)\\])?)"
 	//
-	static const boost::regex cExpression(
+	static const std::regex cExpression(
 		"(?:(!?)\\[([^\\]]+?)\\] *\\(([^\\(]*(?:\\(.*?\\).*?)*?)\\))" // Inline link or image
 		"|(?:(!?)\\[((?:[^]]*?\\[.*?\\].*?)|(?:.+?))\\](?: *\\[(.*?)\\])?)" // Reference link or image
 		"|(?:<(/?([a-zA-Z0-9]+).*?)>)" // potential HTML tag or auto-link
@@ -374,8 +377,8 @@ std::string RawText::_processLinksImagesAndTags(const std::string &src,
 	std::string tgt;
 	std::string::const_iterator prev=src.begin(), end=src.end();
 	while (true) {
-		boost::smatch m;
-		if (boost::regex_search(prev, end, m, cExpression)) {
+		std::smatch m;
+		if (std::regex_search(prev, end, m, cExpression)) {
 			assert(m[0].matched);
 			assert(m[0].length()!=0);
 
@@ -400,12 +403,12 @@ std::string RawText::_processLinksImagesAndTags(const std::string &src,
 					optional<markdown::LinkIds::Target> target=idTable.find(linkId);
 					if (target) { url=target->url; title=target->title; resolved=true; };
 				} else {
-					static const boost::regex cReference("^<?([^ >]*)>?(?: *(?:('|\")(.*)\\2)|(?:\\((.*)\\)))? *$");
+					static const std::regex cReference("^<?([^ >]*)>?(?: *(?:('|\")(.*)\\2)|(?:\\((.*)\\)))? *$");
 					// Useful captures: 1=url, 3/4=title
 					contentsOrAlttext=m[2];
 					std::string urlAndTitle=m[3];
-					boost::smatch mm;
-					if (boost::regex_match(urlAndTitle, mm, cReference)) {
+					std::smatch mm;
+					if (std::regex_match(urlAndTitle, mm, cReference)) {
 						url=mm[1];
 						if (mm[3].matched) title=mm[3];
 						else if (mm[4].matched) title=mm[4];
@@ -591,13 +594,13 @@ TokenGroup RawText::_processBoldAndItalicSpans(const std::string& src,
 TokenGroup RawText::_encodeProcessedItems(const std::string &src,
 	ReplacementTable& replacements)
 {
-	static const boost::regex cReplaced("\x01@(#?[0-9]*)@.+?\x01");
+	static const std::regex cReplaced("\x01@(#?[0-9]*)@.+?\x01");
 
 	TokenGroup r;
 	std::string::const_iterator prev=src.begin();
 	while (true) {
-		boost::smatch m;
-		if (boost::regex_search(prev, src.end(), m, cReplaced)) {
+		std::smatch m;
+		if (std::regex_search(prev, src.end(), m, cReplaced)) {
 			std::string pre=std::string(prev, m[0].first);
 			if (!pre.empty()) r.push_back(TokenPtr(new RawText(pre)));
 			prev=m[0].second;
@@ -624,13 +627,13 @@ TokenGroup RawText::_encodeProcessedItems(const std::string &src,
 std::string RawText::_restoreProcessedItems(const std::string &src,
 	ReplacementTable& replacements)
 {
-	static const boost::regex cReplaced("\x01@(#?[0-9]*)@.+?\x01");
+	static const std::regex cReplaced("\x01@(#?[0-9]*)@.+?\x01");
 
 	std::ostringstream r;
 	std::string::const_iterator prev=src.begin();
 	while (true) {
-		boost::smatch m;
-		if (boost::regex_search(prev, src.end(), m, cReplaced)) {
+		std::smatch m;
+		if (std::regex_search(prev, src.end(), m, cReplaced)) {
 			std::string pre=std::string(prev, m[0].first);
 			if (!pre.empty()) r << pre;
 			prev=m[0].second;

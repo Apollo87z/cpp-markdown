@@ -11,7 +11,7 @@
 #include <sstream>
 #include <cassert>
 
-#include <boost/regex.hpp>
+#include <regex>
 #include <boost/algorithm/string/case_conv.hpp>
 
 using std::cerr;
@@ -31,7 +31,7 @@ struct HtmlTagInfo {
 };
 
 const std::string cHtmlTokenSource("<((/?)([a-zA-Z0-9]+)(?:( +[a-zA-Z0-9]+?(?: ?= ?(\"|').*?\\5))*? */? *))>");
-const boost::regex cHtmlTokenExpression(cHtmlTokenSource),
+const std::regex cHtmlTokenExpression(cHtmlTokenSource),
 	cStartHtmlTokenExpression("^"+cHtmlTokenSource),
 	cOneHtmlTokenExpression("^"+cHtmlTokenSource+"$");
 
@@ -40,8 +40,8 @@ enum ParseHtmlTagFlags { cAlone, cStarts };
 optional<HtmlTagInfo> parseHtmlTag(std::string::const_iterator begin,
 	std::string::const_iterator end, ParseHtmlTagFlags flags)
 {
-	boost::smatch m;
-	if (boost::regex_search(begin, end, m, (flags==cAlone ?
+	std::smatch m;
+	if (std::regex_search(begin, end, m, (flags==cAlone ?
 		cOneHtmlTokenExpression : cStartHtmlTokenExpression)))
 	{
 		HtmlTagInfo r;
@@ -58,8 +58,8 @@ markdown::TokenGroup parseInlineHtmlText(const std::string& src) {
 	markdown::TokenGroup r;
 	std::string::const_iterator prev=src.begin(), end=src.end();
 	while (1) {
-		boost::smatch m;
-		if (boost::regex_search(prev, end, m, cHtmlTokenExpression)) {
+		std::smatch m;
+		if (std::regex_search(prev, end, m, cHtmlTokenExpression)) {
 			if (prev!=m[0].first) {
 				//cerr << "  Non-tag (" << std::distance(prev, m[0].first) << "): " << std::string(prev, m[0].first) << endl;
 				r.push_back(TokenPtr(new markdown::token::InlineHtmlContents(std::string(prev, m[0].first))));
@@ -86,20 +86,20 @@ bool isHtmlCommentStart(std::string::const_iterator begin,
 {
 	// It can't be a single-line comment, those will already have been parsed
 	// by isBlankLine.
-	static const boost::regex cExpression("^<!--");
-	return boost::regex_search(begin, end, cExpression);
+	static const std::regex cExpression("^<!--");
+	return std::regex_search(begin, end, cExpression);
 }
 
 bool isHtmlCommentEnd(std::string::const_iterator begin,
 	std::string::const_iterator end)
 {
-	static const boost::regex cExpression(".*-- *>$");
-	return boost::regex_match(begin, end, cExpression);
+	static const std::regex cExpression(".*-- *>$");
+	return std::regex_match(begin, end, cExpression);
 }
 
 bool isBlankLine(const std::string& line) {
-	static const boost::regex cExpression(" {0,3}(<--(.*)-- *> *)* *");
-	return boost::regex_match(line, cExpression);
+	static const std::regex cExpression(" {0,3}(<--(.*)-- *> *)* *");
+	return std::regex_match(line, cExpression);
 }
 
 optional<TokenPtr> parseInlineHtml(CTokenGroupIter& i, CTokenGroupIter end) {
@@ -237,15 +237,15 @@ size_t countQuoteLevel(const std::string& prefixString) {
 }
 
 optional<TokenPtr> parseBlockQuote(CTokenGroupIter& i, CTokenGroupIter end) {
-	static const boost::regex cBlockQuoteExpression("^((?: {0,3}>)+) (.*)$");
+	static const std::regex cBlockQuoteExpression("^((?: {0,3}>)+) (.*)$");
 	// Useful captures: 1=prefix, 2=content
 
 	if (!(*i)->isBlankLine() && (*i)->text() && (*i)->canContainMarkup()) {
 		const std::string& line(*(*i)->text());
-		boost::smatch m;
-		if (boost::regex_match(line, m, cBlockQuoteExpression)) {
+		std::smatch m;
+		if (std::regex_match(line, m, cBlockQuoteExpression)) {
 			size_t quoteLevel=countQuoteLevel(m[1]);
-			boost::regex continuationExpression=boost::regex("^((?: {0,3}>){"+std::to_string(quoteLevel)+"}) ?(.*)$");
+			std::regex continuationExpression=std::regex("^((?: {0,3}>){"+std::to_string(quoteLevel)+"}) ?(.*)$");
 
 			markdown::TokenGroup subTokens;
 			subTokens.push_back(TokenPtr(new markdown::token::RawText(m[2])));
@@ -265,7 +265,7 @@ optional<TokenPtr> parseBlockQuote(CTokenGroupIter& i, CTokenGroupIter end) {
 						break;
 					} else {
 						const std::string& line(*(*ii)->text());
-						if (boost::regex_match(line, m, continuationExpression)) {
+						if (std::regex_match(line, m, continuationExpression)) {
 							if (m[1].matched && m[1].length()>0) {
 								i=++ii;
 								subTokens.push_back(TokenPtr(new markdown::token::BlankLine));
@@ -275,7 +275,7 @@ optional<TokenPtr> parseBlockQuote(CTokenGroupIter& i, CTokenGroupIter end) {
 					}
 				} else {
 					const std::string& line(*(*i)->text());
-					if (boost::regex_match(line, m, continuationExpression)) {
+					if (std::regex_match(line, m, continuationExpression)) {
 						assert(m[2].matched);
 						if (!isBlankLine(m[2])) subTokens.push_back(TokenPtr(new markdown::token::RawText(m[2])));
 						else subTokens.push_back(TokenPtr(new markdown::token::BlankLine(m[2])));
@@ -291,13 +291,13 @@ optional<TokenPtr> parseBlockQuote(CTokenGroupIter& i, CTokenGroupIter end) {
 }
 
 optional<TokenPtr> parseListBlock(CTokenGroupIter& i, CTokenGroupIter end, bool sub=false) {
-	static const boost::regex cUnorderedListExpression("^( *)([*+-]) +([^*-].*)$");
-	static const boost::regex cOrderedListExpression("^( *)([0-9]+)\\. +(.*)$");
+	static const std::regex cUnorderedListExpression("^( *)([*+-]) +([^*-].*)$");
+	static const std::regex cOrderedListExpression("^( *)([0-9]+)\\. +(.*)$");
 
 	enum ListType { cNone, cUnordered, cOrdered };
 	ListType type=cNone;
 	if (!(*i)->isBlankLine() && (*i)->text() && (*i)->canContainMarkup()) {
-		boost::regex nextItemExpression, startSublistExpression;
+		std::regex nextItemExpression, startSublistExpression;
 		size_t indent=0;
 
 		const std::string& line(*(*i)->text());
@@ -306,8 +306,8 @@ optional<TokenPtr> parseListBlock(CTokenGroupIter& i, CTokenGroupIter end, bool 
 
 		markdown::TokenGroup subTokens, subItemTokens;
 
-		boost::smatch m;
-		if (boost::regex_match(line, m, cUnorderedListExpression)) {
+		std::smatch m;
+		if (std::regex_match(line, m, cUnorderedListExpression)) {
 			indent=m[1].length();
 			if (sub || indent<4) {
 				type=cUnordered;
@@ -318,7 +318,7 @@ optional<TokenPtr> parseListBlock(CTokenGroupIter& i, CTokenGroupIter end, bool 
 				next << "^" << std::string(indent, ' ') << "\\" << startChar << " +([^*-].*)$";
 				nextItemExpression=next.str();
 			}
-		} else if (boost::regex_match(line, m, cOrderedListExpression)) {
+		} else if (std::regex_match(line, m, cOrderedListExpression)) {
 			indent=m[1].length();
 			if (sub || indent<4) {
 				type=cOrdered;
@@ -350,11 +350,11 @@ optional<TokenPtr> parseListBlock(CTokenGroupIter& i, CTokenGroupIter end, bool 
 			// (more than the list itself), then it's another continuation of
 			// the current item. Otherwise it's either a new paragraph (and this
 			// list is ended) or the beginning of a sub-list.
-			static const boost::regex cContinuedItemExpression("^ *([^ ].*)$");
+			static const std::regex cContinuedItemExpression("^ *([^ ].*)$");
 
-			boost::regex continuedAfterBlankLineExpression("^ {"+
+			std::regex continuedAfterBlankLineExpression("^ {"+
 				std::to_string(indent+4)+"}([^ ].*)$");;
-			boost::regex codeBlockAfterBlankLineExpression("^ {"+
+			std::regex codeBlockAfterBlankLineExpression("^ {"+
 				std::to_string(indent+8)+"}(.*)$");
 
 			enum NextItemType { cUnknown, cEndOfList, cAnotherItem };
@@ -371,7 +371,7 @@ optional<TokenPtr> parseListBlock(CTokenGroupIter& i, CTokenGroupIter end, bool 
 						nextItem=cEndOfList;
 					} else if ((*ii)->text()) {
 						const std::string& line(*(*ii)->text());
-						if (boost::regex_match(line, startSublistExpression)) {
+						if (std::regex_match(line, startSublistExpression)) {
 							setParagraphMode=true;
 							++itemCount;
 							i=ii;
@@ -379,37 +379,37 @@ optional<TokenPtr> parseListBlock(CTokenGroupIter& i, CTokenGroupIter end, bool 
 							assert(p);
 							subItemTokens.push_back(*p);
 							continue;
-						} else if (boost::regex_match(line, m, nextItemExpression)) {
+						} else if (std::regex_match(line, m, nextItemExpression)) {
 							setParagraphMode=true;
 							i=ii;
 							nextItem=cAnotherItem;
-						} else if (boost::regex_match(line, m, continuedAfterBlankLineExpression)) {
+						} else if (std::regex_match(line, m, continuedAfterBlankLineExpression)) {
 							assert(m[1].matched);
 							subItemTokens.push_back(TokenPtr(new markdown::token::BlankLine()));
 							subItemTokens.push_back(TokenPtr(new markdown::token::RawText(m[1])));
 							i=++ii;
 							continue;
-						} else if (boost::regex_match(line, m, codeBlockAfterBlankLineExpression)) {
+						} else if (std::regex_match(line, m, codeBlockAfterBlankLineExpression)) {
 							setParagraphMode=true;
 							++itemCount;
 							assert(m[1].matched);
 							subItemTokens.push_back(TokenPtr(new markdown::token::BlankLine()));
 
-							std::string codeBlock=m[1]+'\n';
+							std::string codeBlock=m[1].str()+'\n';
 							++ii;
 							while (ii!=end) {
 								if ((*ii)->isBlankLine()) {
 									CTokenGroupIter iii=ii;
 									++iii;
 									const std::string& nextLine(*(*iii)->text());
-									if (boost::regex_match(nextLine, m, codeBlockAfterBlankLineExpression)) {
-										codeBlock+='\n'+m[1]+'\n';
+									if (std::regex_match(nextLine, m, codeBlockAfterBlankLineExpression)) {
+										codeBlock+='\n'+m[1].str()+'\n';
 										ii=iii;
 									} else break;
 								} else if ((*ii)->text()) {
 									const std::string& line(*(*ii)->text());
-									if (boost::regex_match(line, m, codeBlockAfterBlankLineExpression)) {
-										codeBlock+=m[1]+'\n';
+									if (std::regex_match(line, m, codeBlockAfterBlankLineExpression)) {
+										codeBlock+=m[1].str()+'\n';
 									} else break;
 								} else break;
 								++ii;
@@ -424,22 +424,22 @@ optional<TokenPtr> parseListBlock(CTokenGroupIter& i, CTokenGroupIter end, bool 
 					} else break;
 				} else if ((*i)->text()) {
 					const std::string& line(*(*i)->text());
-					if (boost::regex_match(line, startSublistExpression)) {
+					if (std::regex_match(line, startSublistExpression)) {
 						++itemCount;
 						optional<TokenPtr> p=parseListBlock(i, end, true);
 						assert(p);
 						subItemTokens.push_back(*p);
 						continue;
-					} else if (boost::regex_match(line, m, nextItemExpression)) {
+					} else if (std::regex_match(line, m, nextItemExpression)) {
 						nextItem=cAnotherItem;
 					} else {
-						if (boost::regex_match(line, m, cUnorderedListExpression)
-							|| boost::regex_match(line, m, cOrderedListExpression))
+						if (std::regex_match(line, m, cUnorderedListExpression)
+							|| std::regex_match(line, m, cOrderedListExpression))
 						{
 							// Belongs to the parent list
 							nextItem=cEndOfList;
 						} else {
-							boost::regex_match(line, m, cContinuedItemExpression);
+							std::regex_match(line, m, cContinuedItemExpression);
 							assert(m[1].matched);
 							subItemTokens.push_back(TokenPtr(new markdown::token::RawText(m[1])));
 							++i;
@@ -487,12 +487,12 @@ optional<TokenPtr> parseListBlock(CTokenGroupIter& i, CTokenGroupIter end, bool 
 
 bool parseReference(CTokenGroupIter& i, CTokenGroupIter end, markdown::LinkIds &idTable) {
 	if ((*i)->text()) {
-		static const boost::regex cReference("^ {0,3}\\[(.+)\\]: +<?([^ >]+)>?(?: *(?:('|\")(.*)\\3)|(?:\\((.*)\\)))?$");
+		static const std::regex cReference("^ {0,3}\\[(.+)\\]: +<?([^ >]+)>?(?: *(?:('|\")(.*)\\3)|(?:\\((.*)\\)))?$");
 		// Useful captures: 1=id, 2=url, 4/5=title
 
 		const std::string& line1(*(*i)->text());
-		boost::smatch m;
-		if (boost::regex_match(line1, m, cReference)) {
+		std::smatch m;
+		if (std::regex_match(line1, m, cReference)) {
 			std::string id(m[1]), url(m[2]), title;
 			if (m[4].matched) title=m[4];
 			else if (m[5].matched) title=m[5];
@@ -501,11 +501,11 @@ bool parseReference(CTokenGroupIter& i, CTokenGroupIter end, markdown::LinkIds &
 				++ii;
 				if (ii!=end && (*ii)->text()) {
 					// It could be on the next line
-					static const boost::regex cSeparateTitle("^ *(?:(?:('|\")(.*)\\1)|(?:\\((.*)\\))) *$");
+					static const std::regex cSeparateTitle("^ *(?:(?:('|\")(.*)\\1)|(?:\\((.*)\\))) *$");
 					// Useful Captures: 2/3=title
 
 					const std::string& line2(*(*ii)->text());
-					if (boost::regex_match(line2, m, cSeparateTitle)) {
+					if (std::regex_match(line2, m, cSeparateTitle)) {
 						++i;
 						title=(m[2].matched ? m[2] : m[3]);
 					}
@@ -540,19 +540,19 @@ void flushParagraph(std::string& paragraphText, markdown::TokenGroup&
 optional<TokenPtr> parseHeader(CTokenGroupIter& i, CTokenGroupIter end) {
 	if (!(*i)->isBlankLine() && (*i)->text() && (*i)->canContainMarkup()) {
 		// Hash-mark type
-		static const boost::regex cHashHeaders("^(#{1,6}) +(.*?) *#*$");
+		static const std::regex cHashHeaders("^(#{1,6}) +(.*?) *#*$");
 		const std::string& line=*(*i)->text();
-		boost::smatch m;
-		if (boost::regex_match(line, m, cHashHeaders))
+		std::smatch m;
+		if (std::regex_match(line, m, cHashHeaders))
 			return TokenPtr(new markdown::token::Header(m[1].length(), m[2]));
 
 		// Underlined type
 		CTokenGroupIter ii=i;
 		++ii;
 		if (ii!=end && !(*ii)->isBlankLine() && (*ii)->text() && (*ii)->canContainMarkup()) {
-			static const boost::regex cUnderlinedHeaders("^([-=])\\1*$");
+			static const std::regex cUnderlinedHeaders("^([-=])\\1*$");
 			const std::string& line=*(*ii)->text();
-			if (boost::regex_match(line, m, cUnderlinedHeaders)) {
+			if (std::regex_match(line, m, cUnderlinedHeaders)) {
 				char typeChar=std::string(m[1])[0];
 				TokenPtr p=TokenPtr(new markdown::token::Header((typeChar=='='
 					? 1 : 2), *(*i)->text()));
@@ -566,9 +566,9 @@ optional<TokenPtr> parseHeader(CTokenGroupIter& i, CTokenGroupIter end) {
 
 optional<TokenPtr> parseHorizontalRule(CTokenGroupIter& i, CTokenGroupIter end) {
 	if (!(*i)->isBlankLine() && (*i)->text() && (*i)->canContainMarkup()) {
-		static const boost::regex cHorizontalRules("^ {0,3}((?:-|\\*|_) *){3,}$");
+		static const std::regex cHorizontalRules("^ {0,3}((?:-|\\*|_) *){3,}$");
 		const std::string& line=*(*i)->text();
-		if (boost::regex_match(line, cHorizontalRules)) {
+		if (std::regex_match(line, cHorizontalRules)) {
 			return TokenPtr(new markdown::token::HtmlTag("hr/"));
 		}
 	}
@@ -694,8 +694,8 @@ void Document::_process() {
 }
 
 void Document::_mergeMultilineHtmlTags() {
-	static const boost::regex cHtmlTokenStart("<((/?)([a-zA-Z0-9]+)(?:( +[a-zA-Z0-9]+?(?: ?= ?(\"|').*?\\5))*? */? *))$");
-	static const boost::regex cHtmlTokenEnd("^ *((?:( +[a-zA-Z0-9]+?(?: ?= ?(\"|').*?\\3))*? */? *))>");
+	static const std::regex cHtmlTokenStart("<((/?)([a-zA-Z0-9]+)(?:( +[a-zA-Z0-9]+?(?: ?= ?(\"|').*?\\5))*? */? *))$");
+	static const std::regex cHtmlTokenEnd("^ *((?:( +[a-zA-Z0-9]+?(?: ?= ?(\"|').*?\\3))*? */? *))>");
 
 	TokenGroup processed;
 
@@ -705,11 +705,11 @@ void Document::_mergeMultilineHtmlTags() {
 	for (TokenGroup::const_iterator i=tokens->subTokens().begin(),
 		ie=tokens->subTokens().end(); i!=ie; ++i)
 	{
-		if ((*i)->text() && boost::regex_match(*(*i)->text(), cHtmlTokenStart)) {
+		if ((*i)->text() && std::regex_match(*(*i)->text(), cHtmlTokenStart)) {
 			TokenGroup::const_iterator i2=i;
 			++i2;
 			if (i2!=tokens->subTokens().end() && (*i2)->text() &&
-				boost::regex_match(*(*i2)->text(), cHtmlTokenEnd))
+				std::regex_match(*(*i2)->text(), cHtmlTokenEnd))
 			{
 				processed.push_back(TokenPtr(new markdown::token::RawText(*(*i)->text()+' '+*(*i2)->text())));
 				++i;
@@ -804,11 +804,11 @@ void Document::_processParagraphLines(TokenPtr inTokenContainer) {
 		iie=tokens->subTokens().end(); ii!=iie; ++ii)
 	{
 		if ((*ii)->text() && (*ii)->canContainMarkup() && !(*ii)->inhibitParagraphs()) {
-			static const boost::regex cExpression("^(.*)  $");
+			static const std::regex cExpression("^(.*)  $");
 			if (!paragraphText.empty()) paragraphText+=" ";
 
-			boost::smatch m;
-			if (boost::regex_match(*(*ii)->text(), m, cExpression)) {
+			std::smatch m;
+			if (std::regex_match(*(*ii)->text(), m, cExpression)) {
 				paragraphText += m[1];
 				flushParagraph(paragraphText, paragraphTokens, processed, noPara);
 				processed.push_back(TokenPtr(new markdown::token::HtmlTag("br/")));
