@@ -17,7 +17,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libboost-all-dev
+          sudo apt-get install -y libboost-all-dev librdkafka-dev
 
       - name: Configure CMake
         run: cmake -B build -DCMAKE_CXX_STANDARD=20
@@ -54,25 +54,26 @@ jobs:
           context: .
           push: true
           tags: ghcr.io/apollo87z/cpp-markdown-conversion-service:latest
+
   deploy-to-aks:
-      needs: build-and-push-image
-      runs-on: ubuntu-latest
-      if: github.ref == 'refs/heads/master'
+    needs: build-and-push-image
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
 
-      steps:
-        - name: Checkout code
-          uses: actions/checkout@v4
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-        - name: Azure login
-          uses: azure/login@v2
-          with:
-            creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-        - name: Set AKS context
-          uses: azure/aks-set-context@v4
-          with:
-            resource-group: cpp-markdown-rg
-            cluster-name: cpp-markdown-cluster
+      - name: Set AKS context
+        uses: azure/aks-set-context@v4
+        with:
+          resource-group: cpp-markdown-rg
+          cluster-name: cpp-markdown-cluster
 
-        - name: Deploy to AKS
-          run: kubectl rollout restart deployment/conversion-service
+      - name: Deploy to AKS
+        run: kubectl rollout restart deployment/conversion-service
