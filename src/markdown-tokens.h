@@ -55,7 +55,7 @@ class Token {
 	virtual optional<TokenGroup> processSpanElements(const LinkIds& idTable)
 		{ return none; }
 
-	virtual optional<const std::string&> text() const { return none; }
+	virtual const std::string* text() const { return nullptr; }
 
 	virtual bool canContainMarkup() const { return false; }
 	virtual bool isBlankLine() const { return false; }
@@ -87,7 +87,7 @@ class TextHolder: public Token {
 
 	virtual void writeToken(std::ostream& out) const { out << "TextHolder: " << mText << '\n'; }
 
-	virtual optional<const std::string&> text() const { return mText; }
+	virtual const std::string* text() const { return &mText; }
 
 	virtual bool canContainMarkup() const { return mCanContainMarkup; }
 

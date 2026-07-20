@@ -17,8 +17,8 @@
 using std::cerr;
 using std::endl;
 
-using boost::optional;
-using boost::none;
+using markdown::optional;
+using markdown::none;
 using markdown::TokenPtr;
 using markdown::CTokenGroupIter;
 

@@ -12,13 +12,13 @@
 #include <list>
 #include <memory>
 
-#include <boost/optional.hpp>
+#include <optional>
 #include <unordered_map>
 
 namespace markdown {
 
-	using boost::optional;
-	using boost::none;
+	using std::optional;
+	inline constexpr std::nullopt_t none = std::nullopt;
 
 	// Forward references.
 	class Token;
