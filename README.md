@@ -43,3 +43,4 @@ There *are* a few things that I'd like to add to it, as time permits, such as ex
 ### License
 Cpp-Markdown is released under the MIT license. See the LICENSE.TXT file that accompanies this distribution for all the details that only a lawyer could love, but the general idea is that you can do pretty much anything you want with the code except claim that it's your own work.
 
+# Trigger CI rebuild
