@@ -655,7 +655,7 @@ bool Document::_getline(std::istream& in, std::string& line) {
 bool Document::read(std::istream& in) {
 	if (mProcessed) return false;
 
-	token::Container *tokens=dynamic_cast<token::Container*>(mTokenContainer.get());
+	auto *tokens=dynamic_cast<token::Container*>(mTokenContainer.get());
 	assert(tokens!=nullptr);
 
 	std::string line;
@@ -699,7 +699,7 @@ void Document::_mergeMultilineHtmlTags() {
 
 	TokenGroup processed;
 
-	token::Container *tokens=dynamic_cast<token::Container*>(mTokenContainer.get());
+	auto *tokens=dynamic_cast<token::Container*>(mTokenContainer.get());
 	assert(tokens!=nullptr);
 
 	for (TokenGroup::const_iterator i=tokens->subTokens().begin(),
@@ -724,7 +724,7 @@ void Document::_mergeMultilineHtmlTags() {
 void Document::_processInlineHtmlAndReferences() {
 	TokenGroup processed;
 
-	token::Container *tokens=dynamic_cast<token::Container*>(mTokenContainer.get());
+	auto *tokens=dynamic_cast<token::Container*>(mTokenContainer.get());
 	assert(tokens!=nullptr);
 
 	for (TokenGroup::const_iterator ii=tokens->subTokens().begin(),
