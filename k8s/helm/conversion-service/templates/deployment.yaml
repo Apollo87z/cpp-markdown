@@ -26,5 +26,9 @@ spec:
           env:
             - name: KAFKA_BROKERS
               value: {{ .Values.kafka.brokers | quote }}
+            - name: KAFKA_INPUT_TOPIC
+              value: {{ .Values.kafka.inputTopic | quote }}
+            - name: KAFKA_OUTPUT_TOPIC
+              value: {{ .Values.kafka.outputTopic | quote }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}

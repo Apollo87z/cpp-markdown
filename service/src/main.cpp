@@ -3,12 +3,14 @@
 #include "message_handler.h"
 
 #include <librdkafka/rdkafkacpp.h>
+#include <pqxx/pqxx>
 
 #include <sstream>
 #include <iostream>
 #include <thread>
 #include <atomic>
 #include <memory>
+#include <cstdlib>
 
 std::atomic<bool> running{true};
 
@@ -20,7 +22,24 @@ std::string convertMarkdown(const std::string &input) {
     return out.str();
 }
 
-void kafkaConsumerLoop(const std::string &brokers, const std::string &inputTopic, const std::string &outputTopic) {
+void saveToDatabase(const std::string &dbConnStr, const std::string &tenantId,
+                     const std::string &documentId, const std::string &html)
+{
+    try {
+        pqxx::connection conn(dbConnStr);
+        pqxx::work txn(conn);
+        txn.exec(
+            "INSERT INTO processed_documents (tenant_id, document_id, html) VALUES ($1, $2, $3)",
+            pqxx::params{tenantId, documentId, html}
+        );
+        txn.commit();
+    } catch (const std::exception &e) {
+        std::cerr << "Database write failed: " << e.what() << std::endl;
+    }
+}
+
+void kafkaConsumerLoop(const std::string &brokers, const std::string &inputTopic,
+                       const std::string &outputTopic, const std::string &dbConnStr) {
     std::string errstr;
 
     std::unique_ptr<RdKafka::Conf> conf(RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL));
@@ -75,6 +94,8 @@ void kafkaConsumerLoop(const std::string &brokers, const std::string &inputTopic
             );
             producer->poll(0);
 
+            saveToDatabase(dbConnStr, parsed->tenantId, parsed->documentId, html);
+
             std::cout << "Processed document " << parsed->documentId
                        << " for tenant " << parsed->tenantId << std::endl;
         } else if (msg->err() != RdKafka::ERR__TIMED_OUT) {
@@ -85,8 +106,9 @@ void kafkaConsumerLoop(const std::string &brokers, const std::string &inputTopic
     producer->flush(5000);
     consumer->close();
 }
+
 int main() {
-   const char *brokersEnv = std::getenv("KAFKA_BROKERS");
+    const char *brokersEnv = std::getenv("KAFKA_BROKERS");
     std::string brokers = brokersEnv ? brokersEnv : "my-kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092";
 
     const char *inputTopicEnv = std::getenv("KAFKA_INPUT_TOPIC");
@@ -95,7 +117,11 @@ int main() {
     const char *outputTopicEnv = std::getenv("KAFKA_OUTPUT_TOPIC");
     std::string outputTopic = outputTopicEnv ? outputTopicEnv : "converted-documents-shared";
 
-    std::thread kafkaThread(kafkaConsumerLoop, brokers, inputTopic, outputTopic);
+    const char *dbHostEnv = std::getenv("DB_HOST");
+    std::string dbHost = dbHostEnv ? dbHostEnv : "postgres";
+    std::string dbConnStr = "host=" + dbHost + " port=5432 dbname=capture user=capture password=changeme123";
+
+    std::thread kafkaThread(kafkaConsumerLoop, brokers, inputTopic, outputTopic, dbConnStr);
 
     httplib::Server svr;
 
@@ -113,6 +139,32 @@ int main() {
         try {
             std::string html = convertMarkdown(req.body);
             res.set_content(html, "text/html");
+        } catch (const std::exception &e) {
+            res.status = 500;
+            res.set_content(std::string("{\"error\":\"") + e.what() + "\"}", "application/json");
+        }
+    });
+
+    svr.Get("/documents/:tenant_id", [dbConnStr](const httplib::Request &req, httplib::Response &res) {
+        try {
+            pqxx::connection conn(dbConnStr);
+            pqxx::work txn(conn);
+            auto rows = txn.exec(
+                "SELECT document_id, html, created_at FROM processed_documents WHERE tenant_id = $1 ORDER BY created_at DESC LIMIT 20",
+                pqxx::params{req.path_params.at("tenant_id")}
+            );
+
+            std::ostringstream out;
+            out << "[";
+            bool first = true;
+            for (const auto &row : rows) {
+                if (!first) out << ",";
+                first = false;
+                out << "{\"document_id\":\"" << row["document_id"].c_str() << "\","
+                    << "\"created_at\":\"" << row["created_at"].c_str() << "\"}";
+            }
+            out << "]";
+            res.set_content(out.str(), "application/json");
         } catch (const std::exception &e) {
             res.status = 500;
             res.set_content(std::string("{\"error\":\"") + e.what() + "\"}", "application/json");
