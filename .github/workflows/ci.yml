@@ -53,4 +53,4 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/cpp-markdown-conversion-service:latest
+          tags: ghcr.io/apollo87z/cpp-markdown-conversion-service:latest
