@@ -33,3 +33,9 @@ target_include_directories(markdown_tests PUBLIC src)
 
 include(GoogleTest)
 gtest_discover_tests(markdown_tests)
+
+find_package(Threads REQUIRED)
+
+add_executable(conversion-service service/src/main.cpp)
+target_include_directories(conversion-service PRIVATE service/include)
+target_link_libraries(conversion-service PUBLIC cppmarkdown Threads::Threads)
