@@ -1,4 +1,3 @@
-
 /*
 	Copyright (c) 2009 by Chad Nelson
 	Released under the MIT License.
@@ -11,9 +10,8 @@
 #include <iostream>
 #include <string>
 #include <list>
+#include <memory>
 
-#include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/optional.hpp>
 #include <boost/unordered_map.hpp>
 
@@ -26,11 +24,14 @@ namespace markdown {
 	class Token;
 	class LinkIds;
 
-	typedef boost::shared_ptr<Token> TokenPtr;
+	typedef std::shared_ptr<Token> TokenPtr;
 	typedef std::list<TokenPtr> TokenGroup;
 
-	class Document: private boost::noncopyable {
+	class Document {
 		public:
+		Document(const Document&) = delete;
+		Document& operator=(const Document&) = delete;
+
 		Document(size_t spacesPerTab=cDefaultSpacesPerTab);
 		Document(std::istream& in, size_t spacesPerTab=cDefaultSpacesPerTab);
 		~Document();
