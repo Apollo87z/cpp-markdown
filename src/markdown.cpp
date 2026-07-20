@@ -12,8 +12,8 @@
 #include <cassert>
 
 #include <regex>
-#include <boost/algorithm/string/case_conv.hpp>
-
+#include <algorithm>
+#include <cctype>
 using std::cerr;
 using std::endl;
 
@@ -594,10 +594,10 @@ void LinkIds::add(const std::string& id, const std::string& url, const
 }
 
 std::string LinkIds::_scrubKey(std::string str) {
-	boost::algorithm::to_lower(str);
-	return str;
+    std::transform(str.begin(), str.end(), str.begin(),
+        [](unsigned char c){ return std::tolower(c); });
+    return str;
 }
-
 
 
 const size_t Document::cSpacesPerInitialTab=4; // Required by Markdown format
