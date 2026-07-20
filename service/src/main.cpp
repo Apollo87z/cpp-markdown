@@ -16,9 +16,8 @@ int main() {
     httplib::Server svr;
 
     svr.Get("/health", [](const httplib::Request &, httplib::Response &res) {
-        res.set_content("{\"status\":\"ok\"}", "application/json");
-    });
-
+    res.set_content("{\"status\":\"ok\",\"service\":\"cpp-markdown-conversion\",\"version\":\"1.0.0\"}", "application/json");
+}   );
     svr.Post("/convert", [](const httplib::Request &req, httplib::Response &res) {
         if (req.body.empty()) {
             res.status = 400;
