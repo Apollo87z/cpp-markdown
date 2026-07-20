@@ -20,7 +20,7 @@ std::string convertMarkdown(const std::string &input) {
     return out.str();
 }
 
-void kafkaConsumerLoop(const std::string &brokers) {
+void kafkaConsumerLoop(const std::string &brokers, const std::string &inputTopic, const std::string &outputTopic) {
     std::string errstr;
 
     std::unique_ptr<RdKafka::Conf> conf(RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL));
@@ -33,7 +33,7 @@ void kafkaConsumerLoop(const std::string &brokers) {
         return;
     }
 
-    std::vector<std::string> topics = {"documents-to-convert"};
+    std::vector<std::string> topics = {inputTopic};
     RdKafka::ErrorCode err = consumer->subscribe(topics);
     if (err) {
         std::cerr << "Failed to subscribe: " << RdKafka::err2str(err) << std::endl;
@@ -48,7 +48,7 @@ void kafkaConsumerLoop(const std::string &brokers) {
         return;
     }
 
-    std::cout << "Kafka consumer/producer started, listening on documents-to-convert" << std::endl;
+    std::cout << "Kafka consumer/producer started, listening on " << inputTopic << std::endl;
 
     while (running) {
         std::unique_ptr<RdKafka::Message> msg(consumer->consume(1000));
@@ -66,7 +66,7 @@ void kafkaConsumerLoop(const std::string &brokers) {
             std::string result = buildResultMessage(parsed->tenantId, parsed->documentId, html);
 
             producer->produce(
-                "converted-documents",
+                outputTopic,
                 RdKafka::Topic::PARTITION_UA,
                 RdKafka::Producer::RK_MSG_COPY,
                 const_cast<char *>(result.data()), result.size(),
@@ -85,12 +85,17 @@ void kafkaConsumerLoop(const std::string &brokers) {
     producer->flush(5000);
     consumer->close();
 }
-
 int main() {
-    const char *brokersEnv = std::getenv("KAFKA_BROKERS");
+   const char *brokersEnv = std::getenv("KAFKA_BROKERS");
     std::string brokers = brokersEnv ? brokersEnv : "my-kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092";
 
-    std::thread kafkaThread(kafkaConsumerLoop, brokers);
+    const char *inputTopicEnv = std::getenv("KAFKA_INPUT_TOPIC");
+    std::string inputTopic = inputTopicEnv ? inputTopicEnv : "documents-to-convert-shared";
+
+    const char *outputTopicEnv = std::getenv("KAFKA_OUTPUT_TOPIC");
+    std::string outputTopic = outputTopicEnv ? outputTopicEnv : "converted-documents-shared";
+
+    std::thread kafkaThread(kafkaConsumerLoop, brokers, inputTopic, outputTopic);
 
     httplib::Server svr;
 
