@@ -28,9 +28,9 @@ void saveToDatabase(const std::string &dbConnStr, const std::string &tenantId,
     try {
         pqxx::connection conn(dbConnStr);
         pqxx::work txn(conn);
-        txn.exec(
+        txn.exec_params(
             "INSERT INTO processed_documents (tenant_id, document_id, html) VALUES ($1, $2, $3)",
-            pqxx::params{tenantId, documentId, html}
+            tenantId, documentId, html
         );
         txn.commit();
     } catch (const std::exception &e) {
@@ -149,9 +149,9 @@ int main() {
         try {
             pqxx::connection conn(dbConnStr);
             pqxx::work txn(conn);
-            auto rows = txn.exec(
+            auto rows = txn.exec_params(
                 "SELECT document_id, html, created_at FROM processed_documents WHERE tenant_id = $1 ORDER BY created_at DESC LIMIT 20",
-                pqxx::params{req.path_params.at("tenant_id")}
+                req.path_params.at("tenant_id")
             );
 
             std::ostringstream out;
