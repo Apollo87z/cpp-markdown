@@ -1,0 +1,17 @@
+tenant: shared
+replicaCount: 2
+image:
+  repository: ghcr.io/apollo87z/cpp-markdown-conversion-service
+  tag: latest
+imagePullSecret: ghcr-secret
+resources:
+  requests:
+    cpu: "100m"
+    memory: "64Mi"
+  limits:
+    cpu: "500m"
+    memory: "256Mi"
+service:
+  type: LoadBalancer
+  port: 80
+  targetPort: 8080
