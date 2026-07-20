@@ -1,3 +1,4 @@
+# ---- Build stage ----
 FROM ubuntu:24.04 AS build
 
 RUN apt-get update && apt-get install -y \
@@ -14,12 +15,13 @@ COPY . .
 RUN cmake -B build -DCMAKE_CXX_STANDARD=20 -DCMAKE_BUILD_TYPE=Release \
     && cmake --build build --target conversion-service --parallel
 
-
+# ---- Runtime stage ----
 FROM ubuntu:24.04
 
 RUN apt-get update && apt-get install -y \
     libboost-regex-dev \
     librdkafka1 \
+    librdkafka++1 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
